@@ -1,9 +1,15 @@
 {
+  "name": "letter-monitoring-system",
+  "version": "1.0.0",
+  "description": "Letter Monitoring System for Railway Board",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm start",
+    "client": "cd client && npm start",
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
   "dependencies": {
-    "@emotion/react": "^11.11.3",
-    "@emotion/styled": "^11.11.0",
-    "@mui/material": "^5.15.11",
-    "@mui/x-date-pickers": "^6.19.5",
-    "date-fns": "^2.30.0"
+    "concurrently": "^8.2.2"
   }
-}
+} 
