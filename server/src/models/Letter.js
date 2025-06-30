@@ -74,7 +74,31 @@ const letterSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  remarks: [{
+    text: {
+      type: String,
+      required: true
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  dakReceiptNo: {
+    type: String
+  },
+  rbLetterNo: {
+    type: String
+  },
+  rbLetterDate: {
+    type: Date
+  }
 });
 
 module.exports = mongoose.model('Letter', letterSchema); 

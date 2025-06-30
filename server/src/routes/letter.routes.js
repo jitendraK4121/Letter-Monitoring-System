@@ -21,4 +21,7 @@ router.get('/unread/count', letterController.getUnreadCount);
 // Close a letter (GM only)
 router.patch('/:letterId/close', restrictTo('gm'), letterController.closeLetter);
 
+// Add a remark to a letter (GM only)
+router.post('/:letterId/remark', restrictTo('gm'), letterController.addRemark);
+
 module.exports = router; 

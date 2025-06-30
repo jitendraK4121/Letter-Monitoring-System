@@ -121,8 +121,11 @@ const AddNewLetter = () => {
         title: formData.letterSubject,
         reference: formData.rbDoLetterNo,
         content: `From: ${formData.receivedFrom}\nOffice Dak Receipt No: ${formData.officeDakReceiptNo}\nIs DO Letter: ${formData.isDoLetter ? 'Yes' : 'No'}`,
-        date: formData.letterDate,
-        isPublic: true
+        date: formData.receivingDate,
+        isPublic: true,
+        dakReceiptNo: formData.officeDakReceiptNo,
+        rbLetterNo: formData.rbDoLetterNo,
+        rbLetterDate: formData.letterDate
       };
 
       // Create FormData for file upload if there's a file

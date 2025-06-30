@@ -12,7 +12,11 @@ exports.createLetter = async (req, res) => {
       reference,
       content,
       isPublic = true,
-      attachments = []
+      attachments = [],
+      dakReceiptNo,
+      rbLetterNo,
+      rbLetterDate,
+      date
     } = req.body;
 
     // Validate required fields
@@ -42,7 +46,10 @@ exports.createLetter = async (req, res) => {
       isPublic,
       attachments,
       recipients: recipientsList,
-      date: new Date()
+      date: date || new Date(),
+      dakReceiptNo,
+      rbLetterNo,
+      rbLetterDate
     });
 
     await letter.save();
@@ -93,6 +100,19 @@ exports.getLetters = async (req, res) => {
     .populate({
       path: 'recipients.user',
       select: 'username name role'
+    })
+    .select({
+      title: 1,
+      reference: 1,
+      content: 1,
+      date: 1,
+      status: 1,
+      createdBy: 1,
+      recipients: 1,
+      attachments: 1,
+      dakReceiptNo: 1,
+      rbLetterNo: 1,
+      rbLetterDate: 1
     })
     .sort({ date: -1 });
 
@@ -242,6 +262,55 @@ exports.closeLetter = async (req, res) => {
     });
   } catch (error) {
     console.error('Error in closeLetter:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// Add a remark to a letter
+exports.addRemark = async (req, res) => {
+  try {
+    const { letterId } = req.params;
+    const { remark } = req.body;
+    const userId = req.user._id;
+
+    if (!remark) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Remark text is required'
+      });
+    }
+
+    const letter = await Letter.findByIdAndUpdate(
+      letterId,
+      {
+        $push: {
+          remarks: {
+            text: remark,
+            createdBy: userId
+          }
+        }
+      },
+      { new: true }
+    ).populate('remarks.createdBy', 'username name role');
+
+    if (!letter) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Letter not found'
+      });
+    }
+
+    res.json({
+      status: 'success',
+      data: {
+        letter
+      }
+    });
+  } catch (error) {
+    console.error('Error adding remark:', error);
     res.status(500).json({
       status: 'error',
       message: error.message

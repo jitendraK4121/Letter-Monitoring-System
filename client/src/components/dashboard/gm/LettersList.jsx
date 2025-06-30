@@ -18,6 +18,7 @@ import {
   styled
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import LetterDetailsSidebar from './LetterDetailsSidebar';
 
 const Container = styled(Paper)(({ theme }) => ({
   padding: '20px',
@@ -56,6 +57,8 @@ const LettersList = ({ type }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLetters, setSelectedLetters] = useState([]);
   const [filteredLetters, setFilteredLetters] = useState([]);
+  const [selectedLetter, setSelectedLetter] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     fetchLetters();
@@ -174,6 +177,16 @@ const LettersList = ({ type }) => {
     });
   };
 
+  const handleRowClick = (letter) => {
+    setSelectedLetter(letter);
+    setSidebarOpen(true);
+  };
+
+  const handleCloseSidebar = () => {
+    setSidebarOpen(false);
+    setSelectedLetter(null);
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -244,8 +257,10 @@ const LettersList = ({ type }) => {
                 key={letter._id}
                 selected={selectedLetters.includes(letter._id)}
                 hover
+                onClick={() => handleRowClick(letter)}
+                sx={{ cursor: 'pointer' }}
               >
-                <TableCell padding="checkbox">
+                <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={selectedLetters.includes(letter._id)}
                     onChange={() => handleSelectLetter(letter._id)}
@@ -267,6 +282,12 @@ const LettersList = ({ type }) => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <LetterDetailsSidebar
+        open={sidebarOpen}
+        onClose={handleCloseSidebar}
+        letter={selectedLetter}
+      />
     </Container>
   );
 };
