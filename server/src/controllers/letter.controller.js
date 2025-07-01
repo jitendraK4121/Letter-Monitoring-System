@@ -27,11 +27,11 @@ exports.createLetter = async (req, res) => {
       });
     }
 
-    // Get all users for distribution
-    const users = await User.find();
+    // Get only GM and SSM users for initial distribution
+    const adminUsers = await User.find({ role: { $in: ['gm', 'ssm'] } });
     
-    // Create recipients list including the creator
-    const recipientsList = users.map(user => ({
+    // Create recipients list with only GM and SSM
+    const recipientsList = adminUsers.map(user => ({
       user: user._id,
       readStatus: false,
       receivedDate: new Date()
@@ -84,50 +84,48 @@ exports.createLetter = async (req, res) => {
 exports.getLetters = async (req, res) => {
   try {
     const userId = req.user._id;
-    console.log('Getting letters for user ID:', userId);
+    const userRole = req.user.role;
+    console.log('Getting letters for user:', {
+      userId,
+      userRole,
+      username: req.user.username
+    });
 
-    // Find ALL letters where user is either creator or recipient
-    const letters = await Letter.find({
-      $or: [
-        { createdBy: userId },
-        { 'recipients.user': userId }
-      ]
-    })
-    .populate({
-      path: 'createdBy',
-      select: 'username name role'
-    })
-    .populate({
-      path: 'recipients.user',
-      select: 'username name role'
-    })
-    .select({
-      title: 1,
-      reference: 1,
-      content: 1,
-      date: 1,
-      status: 1,
-      createdBy: 1,
-      recipients: 1,
-      attachments: 1,
-      dakReceiptNo: 1,
-      rbLetterNo: 1,
-      rbLetterDate: 1
-    })
-    .sort({ date: -1 });
+    let query = {};
+
+    // If user is GM or SSM, they can see all letters
+    if (userRole === 'gm' || userRole === 'ssm') {
+      console.log('User is GM/SSM - showing all letters');
+    } else {
+      // Regular users can only see letters where they are marked as recipients
+      query = {
+        'recipients.user': userId
+      };
+      console.log('User is regular user - filtering by recipients');
+    }
+
+    console.log('Query:', JSON.stringify(query));
+
+    // Find letters based on the query
+    const letters = await Letter.find(query)
+      .populate('createdBy', 'username name role')
+      .populate('recipients.user', 'username name role')
+      .sort({ date: -1 });
 
     console.log(`Found ${letters.length} letters`);
     
-    // Log each letter's basic info
-    letters.forEach(letter => {
-      console.log(`Letter ${letter._id}:`, {
-        title: letter.title,
-        createdBy: letter.createdBy?._id,
-        isCreator: letter.createdBy?._id.toString() === userId.toString(),
-        isRecipient: letter.recipients.some(r => r.user._id.toString() === userId.toString())
+    if (letters.length > 0) {
+      console.log('Sample letter:', {
+        id: letters[0]._id,
+        title: letters[0].title,
+        reference: letters[0].reference,
+        createdBy: letters[0].createdBy?.username,
+        recipientsCount: letters[0].recipients?.length || 0
       });
-    });
-
+    } else {
+      console.log('No letters found');
+    }
+    
     res.json({
       status: 'success',
       data: {
@@ -138,7 +136,8 @@ exports.getLetters = async (req, res) => {
     console.error('Error in getLetters:', error);
     res.status(500).json({
       status: 'error',
-      message: error.message
+      message: 'Failed to fetch letters',
+      details: error.message
     });
   }
 };
@@ -311,6 +310,182 @@ exports.addRemark = async (req, res) => {
     });
   } catch (error) {
     console.error('Error adding remark:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// Get letter statistics
+exports.getLetterStats = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Get all letters
+    const letters = await Letter.find({
+      $or: [
+        { createdBy: userId },
+        { 'recipients.user': userId }
+      ]
+    });
+
+    // Calculate statistics
+    const totalLetters = letters.length;
+    const closedLetters = letters.filter(letter => letter.status === 'closed').length;
+    const pendingLetters = totalLetters - closedLetters;
+
+    // Calculate average response time (in days) for closed letters
+    let totalResponseTime = 0;
+    let closedLettersWithDates = 0;
+
+    letters.forEach(letter => {
+      if (letter.status === 'closed' && letter.date && letter.closedDate) {
+        const responseTime = Math.floor((new Date(letter.closedDate) - new Date(letter.date)) / (1000 * 60 * 60 * 24));
+        totalResponseTime += responseTime;
+        closedLettersWithDates++;
+      }
+    });
+
+    const averageResponseTime = closedLettersWithDates > 0 
+      ? Math.round(totalResponseTime / closedLettersWithDates) 
+      : 0;
+
+    res.json({
+      totalLetters,
+      pendingLetters,
+      closedLetters,
+      averageResponseTime
+    });
+  } catch (error) {
+    console.error('Error in getLetterStats:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// Get recent letters
+exports.getRecentLetters = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const letters = await Letter.find({
+      $or: [
+        { createdBy: userId },
+        { 'recipients.user': userId }
+      ]
+    })
+    .populate('createdBy', 'username name role')
+    .sort({ date: -1 })
+    .limit(10);
+
+    res.json({
+      status: 'success',
+      letters
+    });
+  } catch (error) {
+    console.error('Error in getRecentLetters:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+};
+
+// Mark letter to users
+exports.markLetterToUsers = async (req, res) => {
+  try {
+    const { letterId } = req.params;
+    const { userIds } = req.body;
+
+    console.log('Marking letter to users:', {
+      letterId,
+      userIds,
+      gmId: req.user._id
+    });
+
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      console.log('Invalid userIds provided:', userIds);
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please provide at least one user ID'
+      });
+    }
+
+    // Validate that all userIds exist and are regular users
+    const users = await User.find({
+      _id: { $in: userIds },
+      role: 'user'
+    });
+
+    if (users.length !== userIds.length) {
+      console.log('Some user IDs are invalid:', {
+        requestedIds: userIds,
+        foundUsers: users.map(u => u._id)
+      });
+      return res.status(400).json({
+        status: 'error',
+        message: 'One or more user IDs are invalid or not regular users'
+      });
+    }
+
+    // Find the letter
+    const letter = await Letter.findById(letterId);
+    if (!letter) {
+      console.log('Letter not found:', letterId);
+      return res.status(404).json({
+        status: 'error',
+        message: 'Letter not found'
+      });
+    }
+
+    console.log('Current letter recipients:', letter.recipients);
+
+    // Get existing recipient user IDs
+    const existingRecipientIds = letter.recipients.map(r => r.user.toString());
+    console.log('Existing recipient IDs:', existingRecipientIds);
+
+    // Filter out users that are already recipients
+    const newUserIds = userIds.filter(id => !existingRecipientIds.includes(id));
+    console.log('New user IDs to add:', newUserIds);
+
+    // Create new recipients list for new users
+    const newRecipients = newUserIds.map(userId => ({
+      user: userId,
+      readStatus: false,
+      receivedDate: new Date()
+    }));
+
+    // Add new recipients to the existing ones
+    letter.recipients.push(...newRecipients);
+    await letter.save();
+    console.log('Updated letter recipients:', letter.recipients);
+
+    // Fetch the updated letter with populated fields
+    const updatedLetter = await Letter.findById(letterId)
+      .populate('recipients.user', 'username name role')
+      .populate('createdBy', 'username name role');
+
+    console.log('Sending response with updated letter:', {
+      id: updatedLetter._id,
+      recipientsCount: updatedLetter.recipients.length,
+      recipients: updatedLetter.recipients.map(r => ({
+        id: r.user._id,
+        username: r.user.username
+      }))
+    });
+
+    res.json({
+      status: 'success',
+      message: 'Letter marked to selected users successfully',
+      data: {
+        letter: updatedLetter
+      }
+    });
+  } catch (error) {
+    console.error('Error in markLetterToUsers:', error);
     res.status(500).json({
       status: 'error',
       message: error.message

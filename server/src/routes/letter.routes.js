@@ -6,8 +6,17 @@ const { protect, restrictTo } = require('../middleware/auth');
 // Protected routes - require authentication
 router.use(protect);
 
+// Get letter statistics
+router.get('/stats', letterController.getLetterStats);
+
+// Get recent letters
+router.get('/recent', letterController.getRecentLetters);
+
 // Create a new letter (SSM only)
 router.post('/', restrictTo('ssm'), letterController.createLetter);
+
+// Mark letter to users (GM only)
+router.post('/:letterId/mark-to', restrictTo('gm'), letterController.markLetterToUsers);
 
 // Get all letters for the logged-in user
 router.get('/', letterController.getLetters);

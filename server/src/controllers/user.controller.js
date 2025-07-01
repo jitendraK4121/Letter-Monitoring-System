@@ -13,8 +13,13 @@ exports.getAllUsers = async (req, res) => {
       });
     }
 
-    const users = await User.find().select('-password');
-    console.log(`Found ${users.length} users`);
+    // Get all users except SSM and GM
+    const users = await User.find({ role: 'user' }).select('_id username name role');
+    console.log('Found users:', users.map(u => ({
+      id: u._id,
+      username: u.username,
+      role: u.role
+    })));
     
     res.status(200).json({
       status: 'success',

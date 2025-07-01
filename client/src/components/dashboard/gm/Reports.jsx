@@ -82,15 +82,21 @@ const Reports = () => {
     try {
       const token = localStorage.getItem('token');
       const [statsResponse, lettersResponse] = await Promise.all([
-        axios.get('/api/letters/stats', {
+        axios.get('http://localhost:5000/api/letters/stats', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get('/api/letters/recent', {
+        axios.get('http://localhost:5000/api/letters/recent', {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
 
-      setStats(statsResponse.data);
+      setStats({
+        totalLetters: statsResponse.data.totalLetters,
+        pendingLetters: statsResponse.data.pendingLetters,
+        closedLetters: statsResponse.data.closedLetters,
+        averageResponseTime: statsResponse.data.averageResponseTime
+      });
+
       setRecentLetters(lettersResponse.data.letters || []);
       setLoading(false);
     } catch (error) {

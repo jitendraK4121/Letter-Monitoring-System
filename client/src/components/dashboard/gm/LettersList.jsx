@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import LetterDetailsSidebar from './LetterDetailsSidebar';
+import debounce from 'lodash/debounce';
 
 const Container = styled(Paper)(({ theme }) => ({
   padding: '20px',
@@ -31,6 +32,29 @@ const Container = styled(Paper)(({ theme }) => ({
     color: '#333'
   }
 }));
+
+const StatsContainer = styled(Box)({
+  display: 'flex',
+  justifyContent: 'space-around',
+  marginBottom: '20px',
+  gap: '20px'
+});
+
+const StatBox = styled(Paper)({
+  padding: '15px',
+  textAlign: 'center',
+  flex: 1,
+  backgroundColor: '#f5f5f5',
+  '& .stat-number': {
+    fontSize: '24px',
+    fontWeight: 'bold',
+    color: '#6F67B6'
+  },
+  '& .stat-label': {
+    fontSize: '14px',
+    color: '#666'
+  }
+});
 
 const SearchContainer = styled(Box)({
   marginBottom: '20px',
@@ -56,24 +80,17 @@ const LettersList = ({ type }) => {
   const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLetters, setSelectedLetters] = useState([]);
-  const [filteredLetters, setFilteredLetters] = useState([]);
   const [selectedLetter, setSelectedLetter] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [totalStats, setTotalStats] = useState({ total: 0, closed: 0 });
 
-  useEffect(() => {
-    fetchLetters();
-    // Set up auto-refresh every 30 seconds
-    const interval = setInterval(fetchLetters, 30000);
-    return () => clearInterval(interval);
-  }, [type]);
-
-  useEffect(() => {
-    const filtered = letters.filter(letter => 
+  // Memoize filtered letters to prevent unnecessary recalculations
+  const filteredLetters = useMemo(() => {
+    return letters.filter(letter => 
       letter.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       letter.reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       letter.createdBy?.username?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    setFilteredLetters(filtered);
   }, [searchTerm, letters]);
 
   const fetchLetters = async () => {
@@ -91,25 +108,48 @@ const LettersList = ({ type }) => {
       }
 
       const data = await response.json();
-      console.log('Fetched letters:', data);
-
-      // Filter based on type (inbox/closed)
-      const relevantLetters = data.data.letters.filter(letter => {
-        if (type === 'inbox') {
-          return letter.status === 'pending' || !letter.status;
-        } else {
-          return letter.status === 'closed';
-        }
+      
+      // Calculate stats and filter in one pass
+      const allLetters = data.data.letters;
+      const totalClosed = allLetters.reduce((count, letter) => 
+        letter.status === 'closed' ? count + 1 : count, 0);
+      
+      setTotalStats({
+        total: allLetters.length,
+        closed: totalClosed
       });
 
+      // Filter based on type
+      const relevantLetters = allLetters.filter(letter => 
+        type === 'inbox' 
+          ? (letter.status === 'pending' || !letter.status)
+          : letter.status === 'closed'
+      );
+
       setLetters(relevantLetters);
-      setFilteredLetters(relevantLetters);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching letters:', error);
       setError('Failed to fetch letters. Please try again later.');
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchLetters();
+    // Reduced polling frequency to 1 minute for better performance
+    const interval = setInterval(fetchLetters, 60000);
+    return () => clearInterval(interval);
+  }, [type]);
+
+  // Debounced search handler
+  const debouncedSetSearchTerm = useMemo(
+    () => debounce((value) => setSearchTerm(value), 300),
+    []
+  );
+
+  const handleSearch = (event) => {
+    debouncedSetSearchTerm(event.target.value);
   };
 
   const handleSelectAll = (event) => {
@@ -196,13 +236,22 @@ const LettersList = ({ type }) => {
   }
 
   return (
-    <Container elevation={2}>
+    <Box>
+      <Container>
       <Typography className="title">
-        {type === 'inbox' ? 'Inbox Letters' : 'Closed Letters'}
+          {type === 'inbox' ? 'Inbox' : 'Closed Letters'}
       </Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+        <StatsContainer>
+          <StatBox>
+            <Typography className="stat-number">{totalStats.total}</Typography>
+            <Typography className="stat-label">Total Letters</Typography>
+          </StatBox>
+          <StatBox>
+            <Typography className="stat-number">{totalStats.closed}</Typography>
+            <Typography className="stat-label">Closed Letters</Typography>
+          </StatBox>
+        </StatsContainer>
 
       <SearchContainer>
         <TextField
@@ -210,13 +259,13 @@ const LettersList = ({ type }) => {
           variant="outlined"
           size="small"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearch}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
                 <SearchIcon />
               </InputAdornment>
-            ),
+              )
           }}
           sx={{ width: '300px' }}
         />
@@ -229,19 +278,27 @@ const LettersList = ({ type }) => {
               '&:hover': { backgroundColor: '#5a5494' }
             }}
           >
-            Close Selected ({selectedLetters.length})
+              Close Selected
           </Button>
         )}
       </SearchContainer>
 
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
       <TableContainer>
         <Table>
           <TableHead>
             <TableRow>
-              <StyledTableCell padding="checkbox" className="header">
+                  <StyledTableCell className="header" padding="checkbox">
                 <Checkbox
                   indeterminate={selectedLetters.length > 0 && selectedLetters.length < filteredLetters.length}
-                  checked={filteredLetters.length > 0 && selectedLetters.length === filteredLetters.length}
+                      checked={selectedLetters.length > 0 && selectedLetters.length === filteredLetters.length}
                   onChange={handleSelectAll}
                 />
               </StyledTableCell>
@@ -255,7 +312,6 @@ const LettersList = ({ type }) => {
             {filteredLetters.map((letter) => (
               <TableRow 
                 key={letter._id}
-                selected={selectedLetters.includes(letter._id)}
                 hover
                 onClick={() => handleRowClick(letter)}
                 sx={{ cursor: 'pointer' }}
@@ -268,27 +324,23 @@ const LettersList = ({ type }) => {
                 </TableCell>
                 <TableCell>{letter.reference}</TableCell>
                 <TableCell>{letter.title}</TableCell>
-                <TableCell>{letter.createdBy?.username || 'Unknown'}</TableCell>
+                    <TableCell>{letter.createdBy?.username}</TableCell>
                 <TableCell>{formatDate(letter.date)}</TableCell>
               </TableRow>
             ))}
-            {filteredLetters.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} align="center">
-                  No letters found
-                </TableCell>
-              </TableRow>
-            )}
           </TableBody>
         </Table>
       </TableContainer>
+        )}
+      </Container>
 
       <LetterDetailsSidebar
         open={sidebarOpen}
         onClose={handleCloseSidebar}
         letter={selectedLetter}
+        onUpdate={fetchLetters}
       />
-    </Container>
+    </Box>
   );
 };
 

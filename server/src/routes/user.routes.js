@@ -10,9 +10,11 @@ router.use(protect);
 router.get('/profile', userController.getProfile);
 router.patch('/profile', userController.updateProfile);
 
+// Route for getting all users (accessible by GM and SSM)
+router.get('/', restrictTo('gm', 'ssm'), userController.getAllUsers);
+
 // SSM only routes
 router.use(restrictTo('ssm'));
-router.get('/', userController.getAllUsers);
 router.post('/', userController.createUser);
 router.delete('/:id', userController.deleteUser);
 

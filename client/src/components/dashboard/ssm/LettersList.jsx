@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -17,6 +17,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { format } from 'date-fns';
+import debounce from 'lodash/debounce';
 
 const Container = styled(Paper)(({ theme }) => ({
   padding: '20px',
@@ -29,6 +30,29 @@ const Container = styled(Paper)(({ theme }) => ({
     color: '#333'
   }
 }));
+
+const StatsContainer = styled(Box)({
+  display: 'flex',
+  justifyContent: 'space-around',
+  marginBottom: '20px',
+  gap: '20px'
+});
+
+const StatBox = styled(Paper)({
+  padding: '15px',
+  textAlign: 'center',
+  flex: 1,
+  backgroundColor: '#f5f5f5',
+  '& .stat-number': {
+    fontSize: '24px',
+    fontWeight: 'bold',
+    color: '#6F67B6'
+  },
+  '& .stat-label': {
+    fontSize: '14px',
+    color: '#666'
+  }
+});
 
 const SearchContainer = styled(Box)({
   marginBottom: '20px',
@@ -49,7 +73,16 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 const LettersList = ({ type }) => {
   const [letters, setLetters] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredLetters, setFilteredLetters] = useState([]);
+  const [totalStats, setTotalStats] = useState({ total: 0, closed: 0 });
+  const [loading, setLoading] = useState(true);
+
+  // Memoize filtered letters to prevent unnecessary recalculations
+  const filteredLetters = useMemo(() => {
+    return letters.filter(letter => 
+      letter.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      letter.reference?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm, letters]);
 
   const fetchLetters = async () => {
     try {
@@ -64,38 +97,38 @@ const LettersList = ({ type }) => {
       }
 
       const data = await response.json();
-      console.log('Fetched letters:', data);
       
-      // Filter based on type (inbox/closed)
-      const relevantLetters = data.data.letters.filter(letter => {
-        if (type === 'inbox') {
-          return letter.status === 'pending' || !letter.status;
-        } else {
-          return letter.status === 'closed';
-        }
+      // Calculate stats and filter in one pass
+      const allLetters = data.data.letters;
+      const totalClosed = allLetters.reduce((count, letter) => 
+        letter.status === 'closed' ? count + 1 : count, 0);
+      
+      setTotalStats({
+        total: allLetters.length,
+        closed: totalClosed
       });
+      
+      // Filter based on type
+      const relevantLetters = allLetters.filter(letter => 
+        type === 'inbox' 
+          ? (letter.status === 'pending' || !letter.status)
+          : letter.status === 'closed'
+      );
 
       setLetters(relevantLetters);
-      setFilteredLetters(relevantLetters);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching letters:', error);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchLetters();
-    // Set up auto-refresh every 5 seconds
-    const interval = setInterval(fetchLetters, 5000);
+    // Reduced polling frequency to 1 minute for better performance
+    const interval = setInterval(fetchLetters, 60000);
     return () => clearInterval(interval);
   }, [type]);
-
-  useEffect(() => {
-    const filtered = letters.filter(letter => 
-      letter.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      letter.reference?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredLetters(filtered);
-  }, [searchTerm, letters]);
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
@@ -120,6 +153,21 @@ const LettersList = ({ type }) => {
       <Typography className="title">
         {type === 'inbox' ? 'Inbox' : 'Closed Letters'}
       </Typography>
+
+      <StatsContainer>
+        <StatBox elevation={1}>
+          <Typography className="stat-number">{totalStats.total}</Typography>
+          <Typography className="stat-label">Total Letters</Typography>
+        </StatBox>
+        <StatBox elevation={1}>
+          <Typography className="stat-number">{totalStats.closed}</Typography>
+          <Typography className="stat-label">Closed Letters</Typography>
+        </StatBox>
+        <StatBox elevation={1}>
+          <Typography className="stat-number">{totalStats.total - totalStats.closed}</Typography>
+          <Typography className="stat-label">Pending Letters</Typography>
+        </StatBox>
+      </StatsContainer>
       
       <SearchContainer>
         <TextField

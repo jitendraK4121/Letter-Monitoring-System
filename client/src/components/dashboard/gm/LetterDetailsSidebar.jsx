@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -7,7 +7,12 @@ import {
   TextField,
   IconButton,
   Drawer,
-  styled
+  styled,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  OutlinedInput
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
@@ -47,8 +52,121 @@ const RemarkBox = styled(Box)({
   }
 });
 
-const LetterDetailsSidebar = ({ open, onClose, letter }) => {
+const MarkToContainer = styled(Box)({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  marginBottom: '15px',
+  '& .MuiFormControl-root': {
+    flex: 1
+  }
+});
+
+const StyledSelect = styled(Select)({
+  backgroundColor: '#007bff',
+  color: 'white',
+  '& .MuiSelect-select': {
+    padding: '8px 14px',
+  },
+  '& .MuiOutlinedInput-notchedOutline': {
+    borderColor: '#007bff',
+  },
+  '&:hover .MuiOutlinedInput-notchedOutline': {
+    borderColor: '#0056b3',
+  },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: '#0056b3',
+  },
+  '& .MuiSelect-icon': {
+    color: 'white',
+  }
+});
+
+const SubmitButton = styled(Button)({
+  backgroundColor: '#6F67B6',
+  color: 'white',
+  '&:hover': {
+    backgroundColor: '#5a5494',
+  }
+});
+
+const LetterDetailsSidebar = ({ open, onClose, letter, onUpdate }) => {
   const [remark, setRemark] = useState('');
+  const [users, setUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const fetchUsers = async () => {
+    if (users.length > 0) return; // Don't fetch if we already have users
+    
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch users');
+      
+      const data = await response.json();
+      console.log('Users API response:', data); // Debug log
+      
+      if (data.status === 'success' && Array.isArray(data.data?.users)) {
+        // Only get regular users
+        const regularUsers = data.data.users;
+        console.log('Regular users:', regularUsers); // Debug log
+        setUsers(regularUsers);
+      } else {
+        console.error('Invalid API response format:', data);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkToSubmit = async () => {
+    if (isSubmitting || selectedUsers.length === 0) return;
+    setIsSubmitting(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/letters/${letter._id}/mark-to`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userIds: selectedUsers })
+      });
+
+      if (!response.ok) throw new Error('Failed to mark users');
+
+      const data = await response.json();
+      console.log('Mark to response:', data);
+
+      // Clear selection
+      setSelectedUsers([]);
+      
+      // Call the onUpdate callback to refresh the letter list
+      if (onUpdate) {
+        onUpdate();
+      }
+
+      // Show success message
+      alert('Users marked successfully');
+    } catch (error) {
+      console.error('Error marking users:', error);
+      alert('Failed to mark users. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleSendRemark = async () => {
     if (!remark.trim()) return;
@@ -76,6 +194,11 @@ const LetterDetailsSidebar = ({ open, onClose, letter }) => {
       // Handle error (show message to user)
     }
   };
+
+  // Reset selected users when letter changes
+  useEffect(() => {
+    setSelectedUsers([]);
+  }, [letter?._id]);
 
   if (!letter) return null;
 
@@ -127,6 +250,56 @@ const LetterDetailsSidebar = ({ open, onClose, letter }) => {
             {letter.date ? new Date(letter.date).toLocaleDateString() : 'N/A'}
           </Typography>
         </DetailRow>
+
+        <MarkToContainer>
+          <Typography className="label" style={{ minWidth: '80px' }}>Mark To:</Typography>
+          <FormControl fullWidth>
+            <StyledSelect
+              multiple
+              value={selectedUsers}
+              onChange={(e) => setSelectedUsers(e.target.value)}
+              onOpen={() => {
+                console.log('Dropdown opened - fetching users');
+                fetchUsers();
+              }}
+              input={<OutlinedInput />}
+              renderValue={(selected) => {
+                if (loading) return 'Loading users...';
+                const selectedUsernames = selected.map(userId => 
+                  users.find(user => user._id === userId)?.username
+                ).filter(Boolean).join(', ');
+                return selectedUsernames || 'Select users';
+              }}
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 224,
+                    width: 250
+                  }
+                }
+              }}
+            >
+              {loading ? (
+                <MenuItem disabled>Loading users...</MenuItem>
+              ) : users.length === 0 ? (
+                <MenuItem disabled>No users available</MenuItem>
+              ) : (
+                users.map((user) => (
+                  <MenuItem key={user._id} value={user._id}>
+                    {user.username} ({user.name})
+                  </MenuItem>
+                ))
+              )}
+            </StyledSelect>
+          </FormControl>
+          <SubmitButton
+            variant="contained"
+            onClick={handleMarkToSubmit}
+            disabled={selectedUsers.length === 0 || isSubmitting}
+          >
+            {isSubmitting ? 'Submitting...' : 'Submit'}
+          </SubmitButton>
+        </MarkToContainer>
 
         <DetailRow>
           <Typography className="label">Document</Typography>
