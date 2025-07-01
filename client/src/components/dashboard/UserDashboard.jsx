@@ -4,6 +4,8 @@ import { Box, Typography, Paper, List, ListItem, ListItemText, InputBase, IconBu
 import SearchIcon from '@mui/icons-material/Search';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InboxIcon from '@mui/icons-material/Inbox';
+import LockResetIcon from '@mui/icons-material/LockReset';
+import ChangePassword from './ChangePassword';
 
 const DashboardContainer = styled(Box)({
   display: 'flex',
@@ -194,6 +196,113 @@ const UserDashboard = () => {
     fetchLetters();
   };
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <SearchBar>
+                <InputBase
+                  sx={{ ml: 2, flex: 1 }}
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <IconButton sx={{ p: '10px' }}>
+                  <SearchIcon />
+                </IconButton>
+              </SearchBar>
+              <Button 
+                variant="contained" 
+                onClick={handleRefresh}
+                sx={{ ml: 2, backgroundColor: '#6F67B6' }}
+              >
+                Refresh
+              </Button>
+            </Box>
+
+            <LetterList>
+              <List>
+                {letters.length > 0 ? (
+                  letters
+                    .filter(letter => 
+                      letter.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      letter.reference?.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((letter) => (
+                      <LetterItem key={letter._id} button>
+                        <ListItemText
+                          primary={letter.title}
+                          secondary={`Reference: ${letter.reference} | Created by: ${letter.createdBy?.username || 'Unknown'} | Date: ${new Date(letter.date).toLocaleDateString()}`}
+                        />
+                      </LetterItem>
+                    ))
+                ) : (
+                  <ListItem>
+                    <ListItemText primary="No letters found" />
+                  </ListItem>
+                )}
+              </List>
+            </LetterList>
+          </>
+        );
+      case 'inbox':
+        return (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <SearchBar>
+                <InputBase
+                  sx={{ ml: 2, flex: 1 }}
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <IconButton sx={{ p: '10px' }}>
+                  <SearchIcon />
+                </IconButton>
+              </SearchBar>
+              <Button 
+                variant="contained" 
+                onClick={handleRefresh}
+                sx={{ ml: 2, backgroundColor: '#6F67B6' }}
+              >
+                Refresh
+              </Button>
+            </Box>
+
+            <LetterList>
+              <List>
+                {letters.length > 0 ? (
+                  letters
+                    .filter(letter => 
+                      letter.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      letter.reference?.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((letter) => (
+                      <LetterItem key={letter._id} button>
+                        <ListItemText
+                          primary={letter.title}
+                          secondary={`Reference: ${letter.reference} | Created by: ${letter.createdBy?.username || 'Unknown'} | Date: ${new Date(letter.date).toLocaleDateString()}`}
+                        />
+                      </LetterItem>
+                    ))
+                ) : (
+                  <ListItem>
+                    <ListItemText primary="No letters found" />
+                  </ListItem>
+                )}
+              </List>
+            </LetterList>
+          </>
+        );
+      case 'changePassword':
+        return <ChangePassword />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Header>
@@ -235,53 +344,17 @@ const UserDashboard = () => {
             <InboxIcon />
             <Typography>Inbox {letters.length > 0 ? `(${letters.length})` : ''}</Typography>
           </SidebarItem>
+          <SidebarItem 
+            active={activeTab === 'changePassword'} 
+            onClick={() => setActiveTab('changePassword')}
+          >
+            <LockResetIcon />
+            <Typography>Change Password</Typography>
+          </SidebarItem>
         </Sidebar>
 
         <MainContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <SearchBar>
-              <InputBase
-                sx={{ ml: 2, flex: 1 }}
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <IconButton sx={{ p: '10px' }}>
-                <SearchIcon />
-              </IconButton>
-            </SearchBar>
-            <Button 
-              variant="contained" 
-              onClick={handleRefresh}
-              sx={{ ml: 2, backgroundColor: '#6F67B6' }}
-            >
-              Refresh
-            </Button>
-          </Box>
-
-          <LetterList>
-            <List>
-              {letters.length > 0 ? (
-                letters
-                  .filter(letter => 
-                    letter.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    letter.reference?.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .map((letter) => (
-                    <LetterItem key={letter._id} button>
-                      <ListItemText
-                        primary={letter.title}
-                        secondary={`Reference: ${letter.reference} | Created by: ${letter.createdBy?.username || 'Unknown'} | Date: ${new Date(letter.date).toLocaleDateString()}`}
-                      />
-                    </LetterItem>
-                  ))
-              ) : (
-                <ListItem>
-                  <ListItemText primary="No letters found" />
-                </ListItem>
-              )}
-            </List>
-          </LetterList>
+          {renderContent()}
         </MainContent>
       </DashboardContainer>
     </Box>
