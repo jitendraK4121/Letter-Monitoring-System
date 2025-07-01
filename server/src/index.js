@@ -13,7 +13,10 @@ const letterRoutes = require('./routes/letter.routes');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['https://lms-frontend-sk8o.onrender.com', 'http://localhost:3000'],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
