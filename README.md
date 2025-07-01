@@ -1,6 +1,6 @@
-# Railway Board Letters Management System
+# Letters Management System
 
-A web-based system for managing railway board letters, with role-based access for GM (General Manager), SSM (Senior Section Manager), and regular users.
+A web-based system for managing railway board letters, with role-based access for GM (General Manager), SSM (Senior Section Manager), and regular users(Officers).
 
 ## Features
 
