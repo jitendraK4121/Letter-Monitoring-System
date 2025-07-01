@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -9,13 +9,11 @@ import {
   TableHead,
   TableRow,
   Typography,
-  IconButton,
   TextField,
   InputAdornment,
   styled
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import { format } from 'date-fns';
 import debounce from 'lodash/debounce';
 
@@ -134,11 +132,6 @@ const LettersList = ({ type }) => {
     setSearchTerm(event.target.value);
   };
 
-  const handleView = (letterId) => {
-    // Implement view functionality
-    console.log('Viewing letter:', letterId);
-  };
-
   const formatDate = (dateString) => {
     if (!dateString) return '--';
     try {
@@ -197,7 +190,6 @@ const LettersList = ({ type }) => {
               <StyledTableCell className="header">Created By</StyledTableCell>
               <StyledTableCell className="header">Date</StyledTableCell>
               <StyledTableCell className="header">Status</StyledTableCell>
-              <StyledTableCell className="header">View</StyledTableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -209,20 +201,11 @@ const LettersList = ({ type }) => {
                 <StyledTableCell>{letter.createdBy?.username || 'Unknown'}</StyledTableCell>
                 <StyledTableCell>{formatDate(letter.date)}</StyledTableCell>
                 <StyledTableCell>{letter.status || 'pending'}</StyledTableCell>
-                <StyledTableCell>
-                  <IconButton
-                    onClick={() => handleView(letter._id)}
-                    color="primary"
-                    size="small"
-                  >
-                    <VisibilityIcon />
-                  </IconButton>
-                </StyledTableCell>
               </TableRow>
             ))}
             {filteredLetters.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={6} align="center">
                   No letters found
                 </TableCell>
               </TableRow>

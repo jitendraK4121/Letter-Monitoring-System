@@ -65,7 +65,7 @@ const ChangePassword = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/users', {
+      const response = await axios.get('http://localhost:5000/api/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -130,7 +130,8 @@ const ChangePassword = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const endpoint = isAdmin ? '/api/auth/change-user-password' : '/api/auth/change-password';
+      const baseURL = 'http://localhost:5000/api/auth';
+      const endpoint = isAdmin ? `${baseURL}/change-user-password` : `${baseURL}/change-password`;
       const payload = isAdmin 
         ? {
             userId: selectedUser,
