@@ -11,6 +11,8 @@ services:
         value: 5000
       - key: JWT_EXPIRES_IN
         value: 30d
+      - key: MONGODB_URI
+        value: mongodb+srv://jitendrak4121:jitendrak4121@cluster0.iqxvxvz.mongodb.net/lms_database?retryWrites=true&w=majority
 
   - type: web
     name: lms-frontend
