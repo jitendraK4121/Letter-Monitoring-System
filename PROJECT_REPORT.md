@@ -268,6 +268,9 @@ The system uses MongoDB for its flexibility and scalability in handling document
    - Complexity requirements
    - History prevention
    - Regular change prompts
+   - Self-service password change for all users
+   - Current password verification for security
+   - Password confirmation to prevent typos
    ```
 
 ### Reporting System
