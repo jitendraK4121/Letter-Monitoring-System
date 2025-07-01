@@ -86,15 +86,45 @@ exports.login = async (req, res) => {
   }
 };
 
-// GM only - Change user password
+// Change own password
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify current password
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    // Update password
+    user.password = newPassword;
+    user.lastPasswordChange = Date.now();
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Password change error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// GM/SSM only - Change other user's password
 exports.changeUserPassword = async (req, res) => {
   try {
     const { userId, newPassword } = req.body;
-    const gmId = req.user.id; // From auth middleware
+    const adminId = req.user.id;
 
-    // Check if requester is GM
-    const gm = await User.findById(gmId);
-    if (gm.role !== 'gm') {
+    // Check if requester is GM or SSM
+    const admin = await User.findById(adminId);
+    if (admin.role !== 'gm' && admin.role !== 'ssm') {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
@@ -104,9 +134,14 @@ exports.changeUserPassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // SSM can only change regular user passwords
+    if (admin.role === 'ssm' && user.role !== 'user') {
+      return res.status(403).json({ message: 'SSM can only change regular user passwords' });
+    }
+
     user.password = newPassword;
     user.lastPasswordChange = Date.now();
-    user.modifiedBy = gmId;
+    user.modifiedBy = adminId;
     await user.save();
 
     res.json({ message: 'Password updated successfully' });

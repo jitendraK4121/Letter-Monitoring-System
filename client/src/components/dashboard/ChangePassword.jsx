@@ -65,15 +65,21 @@ const ChangePassword = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/users', {
+      const response = await axios.get('http://localhost:5000/api/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      // Extract users from the response data structure
+      const userData = response.data.data?.users || response.data;
+      
+      // Ensure we have an array of users
+      const usersArray = Array.isArray(userData) ? userData : [];
+      
       // Filter users based on role permissions
-      let filteredUsers = response.data;
+      let filteredUsers = usersArray;
       if (userRole === 'ssm') {
         // SSM can only change regular user passwords
-        filteredUsers = response.data.filter(user => user.role === 'user');
+        filteredUsers = usersArray.filter(user => user.role === 'user');
       }
       
       setUsers(filteredUsers);
@@ -89,7 +95,6 @@ const ChangePassword = () => {
       ...prev,
       [name]: value
     }));
-    // Clear messages when user starts typing
     setError('');
     setSuccess('');
   };
@@ -130,7 +135,21 @@ const ChangePassword = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const endpoint = isAdmin ? '/api/auth/change-user-password' : '/api/auth/change-password';
+      const baseURL = 'http://localhost:5000/api/auth';
+      
+      // Log the request details for debugging
+      console.log('Making password change request:', {
+        isAdmin,
+        selectedUser,
+        hasToken: !!token
+      });
+
+      const endpoint = isAdmin 
+        ? `${baseURL}/change-user-password`
+        : `${baseURL}/change-password`;
+
+      console.log('Using endpoint:', endpoint);
+
       const payload = isAdmin 
         ? {
             userId: selectedUser,
@@ -145,9 +164,14 @@ const ChangePassword = () => {
         endpoint,
         payload,
         {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
       );
+
+      console.log('Password change response:', response.data);
 
       setSuccess('Password changed successfully');
       setFormData({
@@ -157,6 +181,12 @@ const ChangePassword = () => {
       });
       setSelectedUser('');
     } catch (error) {
+      console.error('Password change error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        endpoint: error.config?.url
+      });
       setError(error.response?.data?.message || 'Failed to change password');
     }
   };

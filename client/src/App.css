@@ -2,6 +2,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -53,4 +54,43 @@ body {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Prevent text selection in navigation and headers */
+.MuiAppBar-root,
+.MuiDrawer-root,
+.MuiListItem-root,
+.MuiTableCell-head,
+.MuiCardHeader-root,
+.MuiAccordionSummary-root {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+/* Prevent text selection in buttons and links while maintaining clickable cursor */
+button,
+a,
+.MuiButton-root,
+.MuiIconButton-root {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: pointer !important;
+}
+
+/* Allow text selection only in specific components */
+.MuiInputBase-root,
+.MuiTextField-root,
+textarea,
+[contenteditable="true"],
+.allow-select {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+  cursor: text !important;
 }

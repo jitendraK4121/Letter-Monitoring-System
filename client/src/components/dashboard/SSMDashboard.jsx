@@ -10,6 +10,8 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import AddNewLetter from './ssm/AddNewLetter';
 import ManageUsers from './ssm/ManageUsers';
 import LettersList from './ssm/LettersList';
+import ChangePassword from './ChangePassword';
+import Reports from './gm/Reports';
 
 const DashboardContainer = styled(Box)({
   display: 'flex',
@@ -156,9 +158,9 @@ const SSMDashboard = () => {
       case 'manageUsers':
         return <ManageUsers />;
       case 'changePassword':
-        return <div>Change Password Component</div>;
+        return <ChangePassword />;
       case 'reports':
-        return <div>Reports Component</div>;
+        return <Reports />;
       default:
         return <LettersList type="inbox" />;
     }

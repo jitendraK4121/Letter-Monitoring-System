@@ -6,6 +6,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import LettersList from './gm/LettersList';
+import ChangePassword from './ChangePassword';
+import Reports from './gm/Reports';
 
 const DashboardContainer = styled(Box)({
   display: 'flex',
@@ -148,9 +150,9 @@ const GMDashboard = () => {
       case 'closed':
         return <LettersList type="closed" />;
       case 'changePassword':
-        return <div>Change Password Component</div>;
+        return <ChangePassword />;
       case 'reports':
-        return <div>Reports Component</div>;
+        return <Reports />;
       default:
         return <LettersList type="inbox" />;
     }

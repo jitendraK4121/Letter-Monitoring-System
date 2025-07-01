@@ -320,30 +320,85 @@ exports.addRemark = async (req, res) => {
 // Get letter statistics
 exports.getLetterStats = async (req, res) => {
   try {
-    const userId = req.user._id;
-
-    // Get all letters
-    const letters = await Letter.find({
-      $or: [
-        { createdBy: userId },
-        { 'recipients.user': userId }
-      ]
+    const userRole = req.user.role;
+    console.log('Getting stats for user:', {
+      userId: req.user._id,
+      role: userRole,
+      username: req.user.username
     });
+
+    // First, get total count of all letters in the database
+    const totalLettersInDB = await Letter.countDocuments({});
+    console.log('Total letters in database:', totalLettersInDB);
+
+    let query = {};
+
+    // If user is GM or SSM, they can see all letters
+    if (userRole === 'gm' || userRole === 'ssm') {
+      console.log('User is GM/SSM - showing all letters');
+    } else {
+      // Regular users can only see letters where they are recipients
+      query = {
+        'recipients.user': req.user._id
+      };
+      console.log('User is regular user - filtering by recipients');
+    }
+
+    console.log('Query:', JSON.stringify(query));
+
+    // Get all letters based on role with full population
+    const letters = await Letter.find(query)
+      .populate('createdBy', 'username name role')
+      .populate('approvedBy', 'username name role')
+      .sort({ date: -1 });
+
+    console.log(`Found ${letters.length} letters out of ${totalLettersInDB} total letters`);
+
+    // Log the actual letters for debugging
+    console.log('All letters:', letters.map(letter => ({
+      id: letter._id,
+      title: letter.title,
+      reference: letter.reference,
+      status: letter.status,
+      createdBy: letter.createdBy?.username,
+      date: letter.date,
+      recipients: letter.recipients?.length || 0
+    })));
 
     // Calculate statistics
     const totalLetters = letters.length;
-    const closedLetters = letters.filter(letter => letter.status === 'closed').length;
-    const pendingLetters = totalLetters - closedLetters;
+    
+    // Count letters by status
+    const lettersByStatus = letters.reduce((acc, letter) => {
+      const status = letter.status || 'pending';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
 
-    // Calculate average response time (in days) for closed letters
+    console.log('Letters by status:', lettersByStatus);
+
+    const closedLetters = (lettersByStatus.closed || 0) + (lettersByStatus.approved || 0);
+    const pendingLetters = (lettersByStatus.pending || 0) + (lettersByStatus[''] || 0);
+
+    // Calculate average response time (in days) for closed/approved letters
     let totalResponseTime = 0;
     let closedLettersWithDates = 0;
 
     letters.forEach(letter => {
-      if (letter.status === 'closed' && letter.date && letter.closedDate) {
-        const responseTime = Math.floor((new Date(letter.closedDate) - new Date(letter.date)) / (1000 * 60 * 60 * 24));
-        totalResponseTime += responseTime;
-        closedLettersWithDates++;
+      if ((letter.status === 'closed' || letter.status === 'approved') && 
+          letter.date && letter.approvalDate) {
+        const responseTime = Math.floor(
+          (new Date(letter.approvalDate) - new Date(letter.date)) / (1000 * 60 * 60 * 24)
+        );
+        if (responseTime >= 0) { // Only count valid response times
+          totalResponseTime += responseTime;
+          closedLettersWithDates++;
+          console.log(`Letter ${letter._id} response time:`, {
+            created: letter.date,
+            approved: letter.approvalDate,
+            days: responseTime
+          });
+        }
       }
     });
 
@@ -351,11 +406,20 @@ exports.getLetterStats = async (req, res) => {
       ? Math.round(totalResponseTime / closedLettersWithDates) 
       : 0;
 
-    res.json({
+    const stats = {
       totalLetters,
       pendingLetters,
       closedLetters,
-      averageResponseTime
+      averageResponseTime,
+      lettersByStatus, // Include this for debugging
+      totalLettersInDB // Include total letters in DB for verification
+    };
+
+    console.log('Calculated stats:', stats);
+
+    res.json({
+      status: 'success',
+      data: stats
     });
   } catch (error) {
     console.error('Error in getLetterStats:', error);

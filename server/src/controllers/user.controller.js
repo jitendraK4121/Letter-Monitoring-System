@@ -13,8 +13,17 @@ exports.getAllUsers = async (req, res) => {
       });
     }
 
-    // Get all users except SSM and GM
-    const users = await User.find({ role: 'user' }).select('_id username name role');
+    // Get users based on role
+    let query = {};
+    if (req.user.role === 'ssm') {
+      // SSM can only see regular users
+      query = { role: 'user' };
+    }
+
+    const users = await User.find(query)
+      .select('_id username name role email')
+      .sort({ name: 1 });
+
     console.log('Found users:', users.map(u => ({
       id: u._id,
       username: u.username,
