@@ -13,6 +13,7 @@ import {
   MenuItem
 } from '@mui/material';
 import axios from 'axios';
+import { API_URL } from '../../../config';
 
 const FormContainer = styled(Paper)(({ theme }) => ({
   padding: '30px',
@@ -64,9 +65,10 @@ const ChangePassword = () => {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/users', {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.get(`${API_URL}/users`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
       });
       
       // Filter users based on role permissions
@@ -129,26 +131,14 @@ const ChangePassword = () => {
     if (!validateForm()) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const baseURL = 'http://localhost:5000/api/auth';
-      const endpoint = isAdmin ? `${baseURL}/change-user-password` : `${baseURL}/change-password`;
-      const payload = isAdmin 
-        ? {
-            userId: selectedUser,
-            newPassword: formData.newPassword
-          }
-        : {
-            currentPassword: formData.currentPassword,
-            newPassword: formData.newPassword
-          };
-
-      const response = await axios.post(
-        endpoint,
-        payload,
-        {
-          headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.post(`${API_URL}/auth/change-password`, {
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
         }
-      );
+      });
 
       setSuccess('Password changed successfully');
       setFormData({
@@ -158,6 +148,7 @@ const ChangePassword = () => {
       });
       setSelectedUser('');
     } catch (error) {
+      console.error('Error changing password:', error);
       setError(error.response?.data?.message || 'Failed to change password');
     }
   };

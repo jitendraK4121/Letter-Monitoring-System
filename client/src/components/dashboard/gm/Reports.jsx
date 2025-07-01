@@ -21,6 +21,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { API_URL } from '../../../config';
 
 const ReportContainer = styled(Paper)(({ theme }) => ({
   padding: '30px',
@@ -78,56 +79,46 @@ const Reports = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchReports();
-    // Set up auto-refresh every 30 seconds
-    const interval = setInterval(fetchReports, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = { Authorization: `Bearer ${token}` };
 
-  const fetchReports = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem('token');
-      console.log('Fetching reports with token:', token ? 'Present' : 'Missing');
+        const [statsResponse, recentResponse] = await Promise.all([
+          axios.get(`${API_URL}/letters/stats`, { headers }),
+          axios.get(`${API_URL}/letters/recent`, { headers })
+        ]);
 
-      const [statsResponse, lettersResponse] = await Promise.all([
-        axios.get('http://localhost:5000/api/letters/stats', {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get('http://localhost:5000/api/letters/recent', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-      ]);
+        console.log('Stats response:', statsResponse.data);
+        console.log('Letters response:', recentResponse.data);
 
-      console.log('Stats response:', statsResponse.data);
-      console.log('Letters response:', lettersResponse.data);
+        // Check if stats data exists and has the required properties
+        const statsData = statsResponse.data.data || statsResponse.data;
+        if (statsData && typeof statsData === 'object') {
+          setStats({
+            totalLetters: statsData.totalLetters || 0,
+            pendingLetters: statsData.pendingLetters || 0,
+            closedLetters: statsData.closedLetters || 0,
+            averageResponseTime: statsData.averageResponseTime || 0
+          });
+        } else {
+          console.error('Invalid stats response format:', statsResponse.data);
+          setError('Failed to load statistics. Please try again.');
+        }
 
-      // Check if stats data exists and has the required properties
-      const statsData = statsResponse.data.data || statsResponse.data;
-      if (statsData && typeof statsData === 'object') {
-        setStats({
-          totalLetters: statsData.totalLetters || 0,
-          pendingLetters: statsData.pendingLetters || 0,
-          closedLetters: statsData.closedLetters || 0,
-          averageResponseTime: statsData.averageResponseTime || 0
-        });
-      } else {
-        console.error('Invalid stats response format:', statsResponse.data);
-        setError('Failed to load statistics. Please try again.');
+        // Check if letters data exists
+        const lettersData = recentResponse.data.letters || [];
+        setRecentLetters(lettersData);
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+        setError('Failed to fetch reports. Please check your connection and try again.');
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Check if letters data exists
-      const lettersData = lettersResponse.data.letters || [];
-      setRecentLetters(lettersData);
-      
-    } catch (error) {
-      console.error('Error fetching reports:', error);
-      setError('Failed to fetch reports. Please check your connection and try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchData();
+  }, []);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-IN', {

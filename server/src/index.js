@@ -56,11 +56,26 @@ app.use('/api/letters', letterRoutes);
 // Error handling
 app.use(errorHandler);
 
-// Database connection
-connectDB();
-
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-}); 
+const startServer = async () => {
+  try {
+    // Database connection
+    await connectDB();
+
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV}`);
+    });
+  } catch (error) {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use. Please try a different port or close the application using port ${PORT}.`);
+      process.exit(1);
+    } else {
+      console.error('Failed to start server:', error);
+      process.exit(1);
+    }
+  }
+};
+
+startServer(); 

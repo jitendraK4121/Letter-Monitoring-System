@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../../../config';
 import {
   Box,
   Paper,
@@ -99,7 +100,7 @@ const ManageUsers = () => {
       const token = localStorage.getItem('token');
       console.log('Fetching users with token:', token);
 
-      const response = await fetch('http://localhost:5000/api/users', {
+      const response = await fetch(`${API_URL}/users`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -135,7 +136,7 @@ const ManageUsers = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/users', {
+      const response = await fetch(`${API_URL}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -175,7 +176,7 @@ const ManageUsers = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+      const response = await fetch(`${API_URL}/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`

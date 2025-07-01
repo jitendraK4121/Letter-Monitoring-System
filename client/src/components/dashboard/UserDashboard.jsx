@@ -6,6 +6,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import InboxIcon from '@mui/icons-material/Inbox';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import ChangePassword from './ChangePassword';
+import { API_URL } from '../../config';
 
 const DashboardContainer = styled(Box)({
   display: 'flex',
@@ -159,7 +160,7 @@ const UserDashboard = () => {
   const fetchLetters = async () => {
     try {
       console.log('Fetching letters for user:', username, 'role:', userRole);
-      const response = await fetch('http://localhost:5000/api/letters', {
+      const response = await fetch(`${API_URL}/letters`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

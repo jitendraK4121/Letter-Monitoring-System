@@ -20,6 +20,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import LetterDetailsSidebar from './LetterDetailsSidebar';
 import debounce from 'lodash/debounce';
+import { API_URL } from '../../../config';
 
 const Container = styled(Paper)(({ theme }) => ({
   padding: '20px',
@@ -97,7 +98,7 @@ const LettersList = ({ type }) => {
     try {
       setError('');
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/letters', {
+      const response = await fetch(`${API_URL}/letters`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -179,7 +180,7 @@ const LettersList = ({ type }) => {
       
       // Close all selected letters
       const closePromises = selectedLetters.map(letterId =>
-        fetch(`http://localhost:5000/api/letters/${letterId}/close`, {
+        fetch(`${API_URL}/letters/${letterId}/close`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${token}`
