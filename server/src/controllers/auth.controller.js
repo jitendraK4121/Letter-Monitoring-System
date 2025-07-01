@@ -8,7 +8,7 @@ const generateToken = (id) => {
   });
 };
 
-exports.register = async (req, res) => {
+const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
@@ -52,7 +52,7 @@ exports.register = async (req, res) => {
   }
 };
 
-exports.login = async (req, res) => {
+const login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -87,7 +87,7 @@ exports.login = async (req, res) => {
 };
 
 // Change own password
-exports.changePassword = async (req, res) => {
+const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user.id;
@@ -117,7 +117,7 @@ exports.changePassword = async (req, res) => {
 };
 
 // GM/SSM only - Change other user's password
-exports.changeUserPassword = async (req, res) => {
+const changeUserPassword = async (req, res) => {
   try {
     const { userId, newPassword } = req.body;
     const adminId = req.user.id;
@@ -152,7 +152,7 @@ exports.changeUserPassword = async (req, res) => {
 };
 
 // Get all users (GM only)
-exports.getAllUsers = async (req, res) => {
+const getAllUsers = async (req, res) => {
   try {
     if (req.user.role !== 'gm') {
       return res.status(403).json({ message: 'Not authorized' });
@@ -170,7 +170,7 @@ exports.getAllUsers = async (req, res) => {
 };
 
 // Create new user (GM only)
-exports.createUser = async (req, res) => {
+const createUser = async (req, res) => {
   try {
     if (req.user.role !== 'gm') {
       return res.status(403).json({ message: 'Not authorized' });
@@ -207,7 +207,7 @@ exports.createUser = async (req, res) => {
 };
 
 // Initialize default users
-exports.initializeUsers = async (req, res) => {
+const initializeUsers = async (req, res) => {
   try {
     // Delete existing users
     await User.deleteMany({});
@@ -247,4 +247,14 @@ exports.initializeUsers = async (req, res) => {
     console.error('Error initializing users:', error);
     res.status(500).json({ message: 'Error initializing users' });
   }
+};
+
+module.exports = {
+  register,
+  login,
+  changePassword,
+  changeUserPassword,
+  getAllUsers,
+  createUser,
+  initializeUsers
 }; 

@@ -1,5 +1,11 @@
 const config = {
-  API_URL: process.env.REACT_APP_API_URL || 'https://lms-backend-3f2e.onrender.com'
+  development: {
+    apiUrl: 'http://localhost:5000/api'
+  },
+  production: {
+    apiUrl: 'https://lms-backend-3f2e.onrender.com/api'
+  }
 };
 
-export default config; 
+const environment = process.env.NODE_ENV || 'development';
+export const API_URL = config[environment].apiUrl; 

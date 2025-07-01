@@ -12,37 +12,37 @@ const createInitialUsers = async () => {
     console.log('Cleared existing users');
 
     // Create SSM user
-    await User.create({
+    const ssm = new User({
       username: 'ssm',
       password: 'ssm123',
       role: 'ssm',
       name: 'SSM Admin',
-      email: 'ssm@example.com'  // Optional
+      email: 'ssm@example.com'
     });
+    await ssm.save();
     console.log('SSM user created');
 
     // Create GM user
-    await User.create({
+    const gm = new User({
       username: 'gm',
       password: 'gm123',
       role: 'gm',
       name: 'GM Admin',
-      email: 'gm@example.com'  // Optional
+      email: 'gm@example.com'
     });
+    await gm.save();
     console.log('GM user created');
 
-    // Create regular user (only if it doesn't exist)
-    const userExists = await User.findOne({ username: 'user1' });
-    if (!userExists) {
-      await User.create({
-        username: 'user1',
-        password: 'user123',
-        role: 'user',
-        name: 'Regular User',
-        email: 'user1@example.com'
-      });
-      console.log('Regular user created');
-    }
+    // Create regular user
+    const user = new User({
+      username: 'user1',
+      password: 'user123',
+      role: 'user',
+      name: 'Regular User',
+      email: 'user1@example.com'
+    });
+    await user.save();
+    console.log('Regular user created');
 
     console.log('All initial users created successfully');
     process.exit(0);

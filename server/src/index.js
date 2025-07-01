@@ -14,7 +14,10 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['https://lms-frontend-sk8o.onrender.com', 'http://localhost:3000'],
+  origin: [
+    'https://lms-frontend-sk8o.onrender.com',
+    'http://localhost:3000'
+  ],
   credentials: true
 }));
 app.use(express.json());
@@ -28,7 +31,8 @@ app.get('/', (req, res) => {
     endpoints: {
       auth: '/api/auth',
       courses: '/api/courses',
-      users: '/api/users'
+      users: '/api/users',
+      letters: '/api/letters'
     }
   });
 });
@@ -38,7 +42,8 @@ app.get('/api/status', (req, res) => {
   res.json({
     status: 'success',
     message: 'API is running',
-    timestamp: new Date()
+    timestamp: new Date(),
+    environment: process.env.NODE_ENV
   });
 });
 
