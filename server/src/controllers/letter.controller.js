@@ -110,7 +110,7 @@ exports.getLetters = async (req, res) => {
     const letters = await Letter.find(query)
       .populate('createdBy', 'username name role')
       .populate('recipients.user', 'username name role')
-      .sort({ date: -1 });
+    .sort({ date: -1 });
 
     console.log(`Found ${letters.length} letters`);
     
@@ -125,7 +125,7 @@ exports.getLetters = async (req, res) => {
     } else {
       console.log('No letters found');
     }
-    
+
     res.json({
       status: 'success',
       data: {

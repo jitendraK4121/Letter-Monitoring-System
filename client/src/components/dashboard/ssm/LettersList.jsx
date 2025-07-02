@@ -16,7 +16,6 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import { format } from 'date-fns';
 import debounce from 'lodash/debounce';
-import { API_URL } from '../../../config';
 
 const Container = styled(Paper)(({ theme }) => ({
   padding: '20px',
@@ -74,7 +73,6 @@ const LettersList = ({ type }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [totalStats, setTotalStats] = useState({ total: 0, closed: 0 });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   // Memoize filtered letters to prevent unnecessary recalculations
   const filteredLetters = useMemo(() => {
@@ -86,11 +84,9 @@ const LettersList = ({ type }) => {
 
   const fetchLetters = async () => {
     try {
-      setError('');
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/letters`, {
+      const response = await fetch('http://localhost:5000/api/letters', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
@@ -101,7 +97,7 @@ const LettersList = ({ type }) => {
       const data = await response.json();
       
       // Calculate stats and filter in one pass
-      const allLetters = data.letters;
+      const allLetters = data.data.letters;
       const totalClosed = allLetters.reduce((count, letter) => 
         letter.status === 'closed' ? count + 1 : count, 0);
       
@@ -121,7 +117,6 @@ const LettersList = ({ type }) => {
       setLoading(false);
     } catch (error) {
       console.error('Error fetching letters:', error);
-      setError('Failed to fetch letters. Please try again later.');
       setLoading(false);
     }
   };

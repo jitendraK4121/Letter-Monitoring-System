@@ -16,7 +16,6 @@ import { enUS } from 'date-fns/locale';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
-import { API_URL } from '../../../config';
 
 const FormContainer = styled(Paper)(({ theme }) => ({
   padding: '30px',
@@ -142,7 +141,7 @@ const AddNewLetter = () => {
         }];
       }
 
-      const response = await fetch(`${API_URL}/letters`, {
+      const response = await fetch('http://localhost:5000/api/letters', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

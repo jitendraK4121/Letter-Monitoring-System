@@ -1,6 +1,6 @@
 {
-  "short_name": "Railway LMS",
-  "name": "Railway Board Letters Management System",
+  "short_name": "React App",
+  "name": "Create React App Sample",
   "icons": [
     {
       "src": "favicon.ico",

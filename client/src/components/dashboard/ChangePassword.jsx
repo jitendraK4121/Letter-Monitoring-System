@@ -13,7 +13,6 @@ import {
   MenuItem
 } from '@mui/material';
 import axios from 'axios';
-import { API_URL } from '../../config';
 
 const FormContainer = styled(Paper)(({ theme }) => ({
   padding: '30px',
@@ -65,10 +64,9 @@ const ChangePassword = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get(`${API_URL}/users`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/users', {
+        headers: { Authorization: `Bearer ${token}` }
       });
       
       // Extract users from the response data structure
@@ -136,14 +134,44 @@ const ChangePassword = () => {
     if (!validateForm()) return;
 
     try {
-      const response = await axios.post(`${API_URL}/auth/change-password`, {
-        currentPassword: formData.currentPassword,
-        newPassword: formData.newPassword
-      }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+      const token = localStorage.getItem('token');
+      const baseURL = 'http://localhost:5000/api/auth';
+      
+      // Log the request details for debugging
+      console.log('Making password change request:', {
+        isAdmin,
+        selectedUser,
+        hasToken: !!token
       });
+
+      const endpoint = isAdmin 
+        ? `${baseURL}/change-user-password`
+        : `${baseURL}/change-password`;
+
+      console.log('Using endpoint:', endpoint);
+
+      const payload = isAdmin 
+        ? {
+            userId: selectedUser,
+            newPassword: formData.newPassword
+          }
+        : {
+            currentPassword: formData.currentPassword,
+            newPassword: formData.newPassword
+          };
+
+      const response = await axios.post(
+        endpoint,
+        payload,
+        {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('Password change response:', response.data);
 
       setSuccess('Password changed successfully');
       setFormData({
@@ -153,7 +181,12 @@ const ChangePassword = () => {
       });
       setSelectedUser('');
     } catch (error) {
-      console.error('Error changing password:', error);
+      console.error('Password change error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        endpoint: error.config?.url
+      });
       setError(error.response?.data?.message || 'Failed to change password');
     }
   };

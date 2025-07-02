@@ -2,19 +2,15 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
-
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-
-    // Log connection details in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Using database:', conn.connection.name);
-      console.log('Connection state:', conn.connection.readyState === 1 ? 'Connected' : 'Not connected');
+    if (!process.env.MONGODB_URI) {
+      console.error('MONGODB_URI is not defined in environment variables');
+      process.exit(1);
     }
 
+    const conn = await mongoose.connect(process.env.MONGODB_URI);
+
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    
     // Create indexes for better performance
     await Promise.all([
       conn.connection.collection('users').createIndex({ email: 1 }, { unique: true }),

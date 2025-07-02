@@ -13,7 +13,6 @@ import {
   MenuItem
 } from '@mui/material';
 import axios from 'axios';
-import { API_URL } from '../../../config';
 
 const FormContainer = styled(Paper)(({ theme }) => ({
   padding: '30px',
@@ -65,10 +64,9 @@ const ChangePassword = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get(`${API_URL}/users`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/users', {
+        headers: { Authorization: `Bearer ${token}` }
       });
       
       // Filter users based on role permissions
@@ -131,14 +129,26 @@ const ChangePassword = () => {
     if (!validateForm()) return;
 
     try {
-      const response = await axios.post(`${API_URL}/auth/change-password`, {
-        currentPassword: formData.currentPassword,
-        newPassword: formData.newPassword
-      }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+      const token = localStorage.getItem('token');
+      const baseURL = 'http://localhost:5000/api/auth';
+      const endpoint = isAdmin ? `${baseURL}/change-user-password` : `${baseURL}/change-password`;
+      const payload = isAdmin 
+        ? {
+            userId: selectedUser,
+            newPassword: formData.newPassword
+          }
+        : {
+            currentPassword: formData.currentPassword,
+            newPassword: formData.newPassword
+          };
+
+      const response = await axios.post(
+        endpoint,
+        payload,
+        {
+          headers: { Authorization: `Bearer ${token}` }
         }
-      });
+      );
 
       setSuccess('Password changed successfully');
       setFormData({
@@ -148,7 +158,6 @@ const ChangePassword = () => {
       });
       setSelectedUser('');
     } catch (error) {
-      console.error('Error changing password:', error);
       setError(error.response?.data?.message || 'Failed to change password');
     }
   };
@@ -183,17 +192,17 @@ const ChangePassword = () => {
         )}
         
         {!isAdmin && (
-          <FormField>
-            <TextField
-              fullWidth
-              type="password"
-              label="Current Password"
-              name="currentPassword"
-              value={formData.currentPassword}
-              onChange={handleInputChange}
-              variant="outlined"
-            />
-          </FormField>
+        <FormField>
+          <TextField
+            fullWidth
+            type="password"
+            label="Current Password"
+            name="currentPassword"
+            value={formData.currentPassword}
+            onChange={handleInputChange}
+            variant="outlined"
+          />
+        </FormField>
         )}
         
         <FormField>
@@ -209,17 +218,17 @@ const ChangePassword = () => {
         </FormField>
         
         {!isAdmin && (
-          <FormField>
-            <TextField
-              fullWidth
-              type="password"
-              label="Confirm New Password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleInputChange}
-              variant="outlined"
-            />
-          </FormField>
+        <FormField>
+          <TextField
+            fullWidth
+            type="password"
+            label="Confirm New Password"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleInputChange}
+            variant="outlined"
+          />
+        </FormField>
         )}
 
         <SubmitButton

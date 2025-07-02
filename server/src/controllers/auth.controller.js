@@ -8,7 +8,7 @@ const generateToken = (id) => {
   });
 };
 
-const register = async (req, res) => {
+exports.register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
@@ -52,7 +52,7 @@ const register = async (req, res) => {
   }
 };
 
-const login = async (req, res) => {
+exports.login = async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -87,7 +87,7 @@ const login = async (req, res) => {
 };
 
 // Change own password
-const changePassword = async (req, res) => {
+exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user.id;
@@ -117,7 +117,7 @@ const changePassword = async (req, res) => {
 };
 
 // GM/SSM only - Change other user's password
-const changeUserPassword = async (req, res) => {
+exports.changeUserPassword = async (req, res) => {
   try {
     const { userId, newPassword } = req.body;
     const adminId = req.user.id;
@@ -152,7 +152,7 @@ const changeUserPassword = async (req, res) => {
 };
 
 // Get all users (GM only)
-const getAllUsers = async (req, res) => {
+exports.getAllUsers = async (req, res) => {
   try {
     if (req.user.role !== 'gm') {
       return res.status(403).json({ message: 'Not authorized' });
@@ -170,7 +170,7 @@ const getAllUsers = async (req, res) => {
 };
 
 // Create new user (GM only)
-const createUser = async (req, res) => {
+exports.createUser = async (req, res) => {
   try {
     if (req.user.role !== 'gm') {
       return res.status(403).json({ message: 'Not authorized' });
@@ -204,57 +204,4 @@ const createUser = async (req, res) => {
     console.error('Create user error:', error);
     res.status(500).json({ message: 'Server error' });
   }
-};
-
-// Initialize default users
-const initializeUsers = async (req, res) => {
-  try {
-    // Delete existing users
-    await User.deleteMany({});
-
-    // Create SSM user
-    const ssm = new User({
-      username: 'ssm',
-      password: 'ssm123',
-      role: 'ssm',
-      name: 'SSM Admin',
-      email: 'ssm@example.com'
-    });
-    await ssm.save();
-
-    // Create GM user
-    const gm = new User({
-      username: 'gm',
-      password: 'gm123',
-      role: 'gm',
-      name: 'GM Admin',
-      email: 'gm@example.com'
-    });
-    await gm.save();
-
-    // Create regular user
-    const user = new User({
-      username: 'user1',
-      password: 'user123',
-      role: 'user',
-      name: 'Regular User',
-      email: 'user1@example.com'
-    });
-    await user.save();
-
-    res.json({ message: 'Default users initialized successfully' });
-  } catch (error) {
-    console.error('Error initializing users:', error);
-    res.status(500).json({ message: 'Error initializing users' });
-  }
-};
-
-module.exports = {
-  register,
-  login,
-  changePassword,
-  changeUserPassword,
-  getAllUsers,
-  createUser,
-  initializeUsers
 }; 

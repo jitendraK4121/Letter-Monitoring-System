@@ -12,12 +12,10 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  OutlinedInput,
-  Link
+  OutlinedInput
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
-import { API_URL } from '../../../config';
 
 const SidebarContainer = styled(Box)(({ theme }) => ({
   width: '400px',
@@ -105,9 +103,10 @@ const LetterDetailsSidebar = ({ open, onClose, letter, onUpdate }) => {
     
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/users`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/users', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -136,13 +135,14 @@ const LetterDetailsSidebar = ({ open, onClose, letter, onUpdate }) => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/letters/${letter._id}/mark-to`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/letters/${letter._id}/mark-to`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ users: selectedUsers })
+        body: JSON.stringify({ userIds: selectedUsers })
       });
 
       if (!response.ok) throw new Error('Failed to mark users');
@@ -172,11 +172,12 @@ const LetterDetailsSidebar = ({ open, onClose, letter, onUpdate }) => {
     if (!remark.trim()) return;
 
     try {
-      const response = await fetch(`${API_URL}/letters/${letter._id}/remark`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/letters/${letter._id}/remark`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ remark })
       });
@@ -304,13 +305,13 @@ const LetterDetailsSidebar = ({ open, onClose, letter, onUpdate }) => {
           <Typography className="label">Document</Typography>
           <Typography className="value">
             {letter.attachments?.length > 0 ? (
-              <Link 
-                href={`${API_URL}/uploads/${letter.attachments[0]}`}
+              <Button
+                href={`http://localhost:5000/uploads/${letter.attachments[0]}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 View Document
-              </Link>
+              </Button>
             ) : 'No document attached'}
           </Typography>
         </DetailRow>

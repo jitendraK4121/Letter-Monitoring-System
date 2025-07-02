@@ -6,7 +6,6 @@ import {
   Button,
   styled
 } from '@mui/material';
-import { API_URL } from '../../config';
 
 const LoginContainer = styled(Box)({
   minHeight: '100vh',
@@ -84,7 +83,7 @@ const Login = () => {
     e.preventDefault();
     
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

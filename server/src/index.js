@@ -13,13 +13,7 @@ const letterRoutes = require('./routes/letter.routes');
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: [
-    'https://lms-frontend-sk8o.onrender.com',
-    'http://localhost:3000'
-  ],
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -31,8 +25,7 @@ app.get('/', (req, res) => {
     endpoints: {
       auth: '/api/auth',
       courses: '/api/courses',
-      users: '/api/users',
-      letters: '/api/letters'
+      users: '/api/users'
     }
   });
 });
@@ -42,8 +35,7 @@ app.get('/api/status', (req, res) => {
   res.json({
     status: 'success',
     message: 'API is running',
-    timestamp: new Date(),
-    environment: process.env.NODE_ENV
+    timestamp: new Date()
   });
 });
 
@@ -56,26 +48,11 @@ app.use('/api/letters', letterRoutes);
 // Error handling
 app.use(errorHandler);
 
+// Database connection
+connectDB();
+
 const PORT = process.env.PORT || 5000;
 
-const startServer = async () => {
-  try {
-    // Database connection
-    await connectDB();
-
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV}`);
-    });
-  } catch (error) {
-    if (error.code === 'EADDRINUSE') {
-      console.error(`Port ${PORT} is already in use. Please try a different port or close the application using port ${PORT}.`);
-      process.exit(1);
-    } else {
-      console.error('Failed to start server:', error);
-      process.exit(1);
-    }
-  }
-};
-
-startServer(); 
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+}); 
